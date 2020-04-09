@@ -6,15 +6,9 @@ from typing import TextIO
 import ndjson
 import pandas as pd
 import psutil
-from nltk import word_tokenize, wordpunct_tokenize
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import words
 
-BLOCK_SIZE = 2 * 1024 * 1024  # * 1024
-THRESHOLD = 16 * 1024 * 1024 * 1024
-memorylimit = 1024 * 3
-fileCounter = 0
-filename = 'file' + str(fileCounter) + '.json'# change to json file to store the dictionary
+from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD
+from process_data import lemma_df, tokenize_df
 
 process = psutil.Process(os.getpid())
 
@@ -24,18 +18,14 @@ def build_index(
     """
     SPMI algorithm build index in blocks using defaultdict()
     """
-    file_num = 0
-    index = defaultdict(list)
-    for docID, terms_list in df.iterrows():
+    index: defaultdict = defaultdict(list)
+    file_num: int = 0
+    for docID, terms_list in df.iterrows():  # stream implemented as reading rows
         for term in terms_list.values[0]:
-            index[term].append(docID)
-        # if psutil.virtual_memory().available < BLOCK_SIZE
-        # or process.memory_info()[0] > THRESHOLD:
-        if (sys.getsizeof(index) / 1024) >= memorylimit:
-            # print(index)
-            #     with open('file.txt', 'w') as f:
-            #         print(index, file=f)
-            # writing
+            index[term].append(docID)  # add posting list, check for existing inside
+        if psutil.virtual_memory().available < BLOCK_SIZE or (
+                sys.getsizeof(index) / 1024) >= MEMORY_LIMIT or process.memory_info()[0] > THRESHOLD:
+            index.pop("", None)
             file_num = write_block_to_file(index, file_num)
             index = defaultdict(list)
 
@@ -44,14 +34,14 @@ def write_block_to_file(
         index: defaultdict(list),
         file_num: int,
 ) -> int:
-    # need to add sort here
-    # index=sorted(index.values())
+    """
+    Write defaultdict() to json file
+    :rtype: file_num for naming
+    """
     dict_for_index = sorted(index.items())
     ndjson.dump(dict_for_index, open("index" + str(file_num) + ".json", 'w'))
-    #     f.close()
-    #     outfile.write('\n')
-    file_num1 = file_num + 1
-    return file_num1  # or make global
+    file_num = file_num + 1
+    return file_num
 
 
 def create_directories():
@@ -69,19 +59,8 @@ def process_data(
     """
     Tokenizing and lemmatizing input dataFrame.
     """
-    # TODO: implement clean English language
-    # df['Plot'] = [" ".join(w for w in wordpunct_tokenize(row)
-    #                        if w.lower() in words or not w.isalpha())
-    #               for row in df.Plot]
-
-    # df['Plot'].apply(lambda row: [item for item in row if item.lower()
-    # in words.words() or not item.isalpha()])
-    df['Plot'] = df["Plot"].replace(
-        r"(<[^>]*>|\W)", " ", regex=True, inplace=True)
-    df['Plot'] = df["Plot"].apply(lambda row: word_tokenize(row))
-    df['Plot'] = df["Plot"].apply(
-        lambda row: [WordNetLemmatizer().lemmatize(sym)
-                     for sym in row if sym != " "])
+    df['Plot'] = tokenize_df(df)
+    df = lemma_df(df)
     return df
 
 
@@ -91,11 +70,9 @@ if __name__ == "__main__":
     with open('data/preprocessed/tokenized_dataset.csv', "w") as prep_file:
         for chunk in pd.read_csv("wiki_movie_plots_deduped.csv",
                                  usecols=["Plot"],  # add "Title"
-                                 chunksize=10,
+                                 chunksize=100000,
                                  ):
             chunk_processed: pd.DataFrame(columns=["Plot"]
                                           ) = process_data(chunk)
             build_index(chunk_processed)
             # chunk_processed.to_csv(prep_file, header=None, index=False)
-
-

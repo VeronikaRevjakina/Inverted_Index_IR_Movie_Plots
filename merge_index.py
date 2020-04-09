@@ -2,6 +2,7 @@ from collections import defaultdict
 import ndjson
 import sys
 
+
 memorylimit = 1024 * 3
 
 
