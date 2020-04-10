@@ -1,5 +1,5 @@
-import os
 import sys
+from collections import Counter
 from collections import defaultdict
 from typing import TextIO
 
@@ -7,10 +7,10 @@ import ndjson
 import pandas as pd
 import psutil
 
-from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD
+from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH
+from helper_funcs import create_directories, process
+from merge import multi_merge_sort
 from process_data import lemma_df, tokenize_df
-
-process = psutil.Process(os.getpid())
 
 
 def build_index(
@@ -26,9 +26,10 @@ def build_index(
             index[term].append(docID)  # add posting list, check for existing inside
         if psutil.virtual_memory().available < BLOCK_SIZE or (
                 sys.getsizeof(index) / 1024) >= MEMORY_LIMIT or process.memory_info()[0] > THRESHOLD:
-            index.pop("", None)
             number = write_block_to_file(index, number)
             index = defaultdict(list)
+    if index:  # tail if not reached memory check, but processed data in index
+        number = write_block_to_file(index, number)
     return number
 
 
@@ -38,21 +39,18 @@ def write_block_to_file(
 ) -> int:
     """
     Write defaultdict() to json file
-    :rtype: file_num for naming
+
     """
-    dict_for_index = sorted(index.items())  # sort posting lists
-    ndjson.dump(dict_for_index, open("index" + str(number) + ".json", 'w'))
-    number = number + 1  # afterwards for merge
+    index.pop("", None)
+    for key in index.keys():
+        index[key] = Counter(index[key])  # reformat data as doc_id: frequency_keyword_in_doc_id_file
+    index = sorted(index.items())  # sort posting lists
+    ndjson.dump(index, open("index" + str(number) + ".json", 'w'))
+    with open(
+            BUILDED_INDEX_PATH + "index{}.json".format(str(number)), "w") as file:
+        ndjson.dump(index, file)
+    number += 1  # store file number , used afterwards for merge
     return number
-
-
-def create_directories():
-    """
-    Create packages for data storing.
-    """
-    for folder in ["data/preprocessed", "data/files_index"]:
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
 
 
 def process_data(
@@ -64,56 +62,6 @@ def process_data(
     df = tokenize_df(df)
     df = lemma_df(df)
     return df
-
-
-def multi_merge_sort(number: int) -> int:
-    """
-
-    :Multi merge algorithm
-    """
-    files = [
-        open(
-            "index{}.json".format(num),
-            "r",
-            # buffering=math.floor(const_size_in_bytes / (file_number - 1)),
-        )
-        for num in range(number)
-    ]
-    files_to_read: list = files  # pointers to read lines
-    temp_dictionary: defaultdict(list) = defaultdict(
-        list)  # lines from each file stored, posting lists already combined
-    term_file: defaultdict(list) = defaultdict(list)  # storage for files_ro_read assignment
-    final_index_dict: defaultdict(list) = defaultdict(list)
-    while files:  # check eof
-        for file in files_to_read:
-            line = file.readline()
-            if not line:
-                files.remove(file)
-                file.close()
-                # if os.path.exists(file.name):
-                #     os.remove(file.name)  # drop tmp index file
-            else:
-                term, posting_list = ndjson.loads(line)[0]
-                temp_dictionary[term].append(posting_list)
-                term_file[term].append(file)
-                # after read lines from each file
-        if temp_dictionary.keys():
-            min_term = min(temp_dictionary.keys())
-            min_posting_list = temp_dictionary.pop(min_term)
-            files_to_read = term_file.pop(min_term)  # read next line on files where min term was
-            final_index_dict[min_term].append(min_posting_list)
-            if psutil.virtual_memory().available < BLOCK_SIZE or MEMORY_LIMIT <= (
-                    sys.getsizeof(final_index_dict) / 1024) or process.memory_info()[0] > THRESHOLD:
-                write_to_file(min_term, final_index_dict)
-                final_index_dict = defaultdict(list)  # clean out orm
-
-
-def write_to_file(file_name: int, index: defaultdict(list)):
-    dict_for_index = sorted(index.items())  # sort posting lists
-    with open("data/files_index/{}.json".format(file_name), 'w') as file:
-        ndjson.dump(dict_for_index, file)
-    # with open("data/index/{}.json".format(file_name), "wb") as file:
-    #     pickle.dump(dict_for_index, file)
 
 
 if __name__ == "__main__":

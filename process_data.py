@@ -5,10 +5,8 @@ from nltk import WordNetLemmatizer
 def lemma_df(df: pd.DataFrame(columns=["Plot"])
              ) -> pd.DataFrame(columns=["Plot"]):
     """
-    df lemmatization
-    :rtype: df
-    :param df: input dataFrame for lemmatization
-    :rtype: df: lemmatized dataFrame
+    df lemmatisation
+
     """
     df['Plot'] = df["Plot"].apply(
         lambda row: [WordNetLemmatizer().lemmatize(sym)
@@ -20,9 +18,7 @@ def tokenize_df(df: pd.DataFrame(columns=["Plot"])
                 ) -> pd.DataFrame(columns=["Plot"]):
     """
     df tokenization
-    :rtype: df
-    :param df: input dataFrame for tokenization
-    :return df: tokenized dataFrame
+
     """
     df['Plot'].replace(r"[^\w\s]", " ", regex=True, inplace=True)  # Removes all punctuations
     df['Plot'].replace(r"\d+", " ", regex=True, inplace=True)  # Replaces digits
@@ -31,4 +27,3 @@ def tokenize_df(df: pd.DataFrame(columns=["Plot"])
     df["Plot"] = df["Plot"].astype(str).str.lower()
     df["Plot"] = df["Plot"].apply(lambda text: text.split(" "))
     return df
-
