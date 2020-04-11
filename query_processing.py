@@ -6,6 +6,7 @@ import pandas as pd
 from nltk import WordNetLemmatizer
 
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
+from operations_posting_lists import union_posting_lists
 from process_data import tokenize_query
 import numpy as np
 
@@ -29,11 +30,11 @@ def get_posting_list_for_token(token: str) -> dict:
                     if line:
                         term, posting_list_r = ndjson.loads(line)[0]
                         if token == term:  # if found token in document
-                            return posting_list_r
+                            return dict(sorted(posting_list_r.items()))  # order by doc_ids for operations
                         elif token < term:  # optimization, not go through all document, if not found token,
                             # but token already bigger value than term
                             print("term not found")
-                            return posting_list
+    return posting_list
 
 
 def query_processing(query_in: str
@@ -50,31 +51,32 @@ def query_processing(query_in: str
     if operations_set.intersection(keywords) != operations_set:  # check operations only contains keywords
         print("The query doesn't match the format.")
         return {}  # quit processing
-    if query_in:
+    if query_words_deque:
         final_postings: dict = get_processed_posting_list_operations(query_words_deque.copy(), operations)
         print_docs_from_posting_lists(final_postings)
 
 
-def get_processed_posting_list_operations(operations: deque, query_words_deque: deque) -> dict:
-    left_word_query: str = query_words_deque.popleft() #  get first input word
+def get_processed_posting_list_operations(query_words_deque: deque, operations: deque) -> dict:
+    left_word_query: str = query_words_deque.popleft()  # get first input word
     left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
     left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
-    left_post_list: list = sorted(get_posting_list_for_token(left_word_query).keys())
 
-    if len(query_words_deque) == 1:  # if only 1 word in query, ignore latest operation
-        return left_post_list
+    if len(query_words_deque) == 0:  # if only 1 word in query, ignore latest operation
+        return left_dict_post_list
     else:
         try:
             while query_words_deque:
                 right_word_query: str = query_words_deque.popleft()  # get next word
                 right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
-                right_post_list: list = sorted(get_posting_list_for_token(right_word_query).keys())
+                right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
                 curr_operation: str = operations.popleft()  # current operation match keywords
 
-                # if curr_operation == "or":
-                #     if right_post_list:
-                #         left_post_list = union_posting_lists(left_post_list,right_post_list)  # update left postings with united value
-                #         continue
+                if curr_operation == "or":
+                    if right_dict_post_list:
+                        left_dict_post_list = union_posting_lists(left_dict_post_list,
+                                                                  right_dict_post_list)  # update left postings with
+                        # united value
+                        continue
                 # elif curr_operation == "and":
                 #     if right_post_list:
                 #         left_post_list = intersect_posting_lists(left_post_list,
@@ -85,8 +87,6 @@ def get_processed_posting_list_operations(operations: deque, query_words_deque: 
             print("End of query")
 
     return left_dict_post_list
-
-
 
 
 def print_docs_from_posting_lists(posting_list: dict):
@@ -103,7 +103,7 @@ def print_docs_from_posting_lists(posting_list: dict):
     docs_ranks = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
 
     for docID, rank in zip(docs_ids, docs_ranks):
-        text = pd.read_csv(DATA_PATH, skiprows=docID+1, nrows=1, header=None).values[0]
+        text = pd.read_csv(DATA_PATH, skiprows=docID + 1, nrows=1, header=None).values[0]
         print("Document id: ", docID)
         print("Times mentioned in plot: ", rank, "\n")
         print(text)  # print all info correspond to query
@@ -112,4 +112,3 @@ def print_docs_from_posting_lists(posting_list: dict):
 if __name__ == "__main__":
     query = input('Enter your query:')
     res = query_processing(query)
-
