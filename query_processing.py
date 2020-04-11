@@ -3,6 +3,7 @@ from collections import deque
 
 import ndjson
 import pandas as pd
+from nltk import WordNetLemmatizer
 
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
 from process_data import tokenize_query
@@ -13,7 +14,7 @@ files: list = sorted(os.listdir(FINAL_INDEX_PATH))
 file_names: list = [os.path.splitext(file)[0] for file in files]
 
 
-def get_posting_list(token: str) -> dict:
+def get_posting_list_for_token(token: str) -> dict:
     """
     Get posting list of token
 
@@ -49,11 +50,43 @@ def query_processing(query_in: str
     if operations_set.intersection(keywords) != operations_set:  # check operations only contains keywords
         print("The query doesn't match the format.")
         return {}  # quit processing
+    if query_in:
+        final_postings: dict = get_processed_posting_list_operations(query_words_deque.copy(), operations)
+        print_docs_from_posting_lists(final_postings)
 
-    if len(query_words_deque) == 1:  # if only 1 word, ignore latest operation
-        post_list = get_posting_list(query_words_deque.popleft())
-        print_docs_from_posting_lists(post_list)
-        return post_list
+
+def get_processed_posting_list_operations(operations: deque, query_words_deque: deque) -> dict:
+    left_word_query: str = query_words_deque.popleft() #  get first input word
+    left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
+    left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
+    left_post_list: list = sorted(get_posting_list_for_token(left_word_query).keys())
+
+    if len(query_words_deque) == 1:  # if only 1 word in query, ignore latest operation
+        return left_post_list
+    else:
+        try:
+            while query_words_deque:
+                right_word_query: str = query_words_deque.popleft()  # get next word
+                right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
+                right_post_list: list = sorted(get_posting_list_for_token(right_word_query).keys())
+                curr_operation: str = operations.popleft()  # current operation match keywords
+
+                # if curr_operation == "or":
+                #     if right_post_list:
+                #         left_post_list = union_posting_lists(left_post_list,right_post_list)  # update left postings with united value
+                #         continue
+                # elif curr_operation == "and":
+                #     if right_post_list:
+                #         left_post_list = intersect_posting_lists(left_post_list,
+                #                                              right_post_list)  # update left postings with intersect value
+                #         continue
+
+        except IndexError:
+            print("End of query")
+
+    return left_dict_post_list
+
+
 
 
 def print_docs_from_posting_lists(posting_list: dict):
@@ -65,8 +98,10 @@ def print_docs_from_posting_lists(posting_list: dict):
                                   key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
     docs_ids: np.array = np.array(list(posting_list.keys()), dtype=int)
     print("Overall found documents:", len(docs_ids))
+
     docs_ids = docs_ids[:TOP_CUT]  # leave only top k items for response
     docs_ranks = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
+
     for docID, rank in zip(docs_ids, docs_ranks):
         text = pd.read_csv(DATA_PATH, skiprows=docID+1, nrows=1, header=None).values[0]
         print("Document id: ", docID)
