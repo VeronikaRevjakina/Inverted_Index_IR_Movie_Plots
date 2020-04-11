@@ -7,7 +7,7 @@ import ndjson
 import pandas as pd
 import psutil
 
-from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH
+from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH, DATA_PATH
 from helper_funcs import create_directories, process
 from merge import multi_merge_sort
 from process_data import lemma_df, tokenize_df
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     prep_file: TextIO
     file_num: int = 0
     with open('data/preprocessed/tokenized_dataset.csv', "w") as prep_file:
-        for chunk in pd.read_csv("wiki_movie_plots_deduped.csv",
+        for chunk in pd.read_csv(DATA_PATH,
                                  usecols=["Plot"],  # add "Title"
                                  chunksize=100000,
                                  ):
