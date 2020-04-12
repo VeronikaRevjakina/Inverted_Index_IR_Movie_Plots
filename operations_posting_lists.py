@@ -56,7 +56,20 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
     return result_dict
 
 
-def intersect_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
+def intersect_many_posting_lists(list_of_posting_dicts: list) -> dict:
+    """
+
+    Computes intersection between 2 non-empty sorted posting lists as dicts
+    """
+    list_of_posting_dicts.sort(key=len)
+    result_dict: dict = list_of_posting_dicts.pop()  # get shortest
+    while list_of_posting_dicts and result_dict:
+        next_shortest_dict: dict = list_of_posting_dicts.pop()
+        result_dict = intersect_two_posting_lists(result_dict, next_shortest_dict)  # shortest with next by len
+    return result_dict
+
+
+def intersect_two_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
     """
 
     Computes intersection between 2 non-empty sorted posting lists as dicts

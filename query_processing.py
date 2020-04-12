@@ -6,7 +6,8 @@ import pandas as pd
 from nltk import WordNetLemmatizer
 
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
-from operations_posting_lists import union_posting_lists, intersect_posting_lists, not_postings_list
+from operations_posting_lists import union_posting_lists, intersect_two_posting_lists, not_postings_list, \
+    intersect_many_posting_lists
 from process_data import tokenize_query
 import numpy as np
 
@@ -62,40 +63,46 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     left_word_query: str = query_words_deque.popleft()  # get first input word
     left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
     left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
-    operations_one_check: deque = operations.copy()
-    if len(query_words_deque) == 0 and (not operations_one_check or operations_one_check.popleft() != "not"):  # if only 1 word in query, ignore latest operation
-        print("One-word query")
-        return left_dict_post_list
-    else:
+    multiple_postings: list = list()
+    flag_next: bool = False
+    while True:
         try:
-            while True:
-                if query_words_deque:
-                    right_word_query: str = query_words_deque.popleft()  # get next word
-                    right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
-                    right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
-                    curr_operation: str = operations.popleft()  # current operation match keywords
-                else:
-                    right_dict_post_list: dict = dict()
-                    curr_operation: str = operations.popleft()
+            right_word_query: str = query_words_deque.popleft()  # get next word
+            right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
+            right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
+            curr_operation: str = operations.popleft()  # current operation match keywords
+
+            if curr_operation != "and":  # and only process by multiple
+
+                if multiple_postings:  # if reached end of and list (next operation)
+                    left_dict_post_list = intersect_many_posting_lists(multiple_postings)
+                    multiple_postings = list()  # clean for future
 
                 if curr_operation == "or":
                     if right_dict_post_list:
                         left_dict_post_list = union_posting_lists(left_dict_post_list,
                                                                   right_dict_post_list)  # update left postings with
-                        # united value
-                elif curr_operation == "and":
-                    if right_dict_post_list:
-                        left_dict_post_list = intersect_posting_lists(left_dict_post_list,
-                                                                      right_dict_post_list)  # update left postings
                         # with intersect value
                 elif curr_operation == "not":
                     if not right_dict_post_list:
                         left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
                         # with intersect value
+            else:
+                if not flag_next:  # there are no more combined with and tokens
+                    if multiple_postings:
+                        multiple_postings.append(right_dict_post_list)  # store while not reached end
+                    else:
+                        multiple_postings = [left_dict_post_list, right_dict_post_list]  # initialization
+
+                if not (left_dict_post_list or right_dict_post_list):  # only empty
+                    flag_next = True
+                    multiple_postings = list()
 
         except IndexError:
-            print("End of query")
-
+            # print("End of query")
+            if multiple_postings:
+                left_dict_post_list = intersect_many_posting_lists(multiple_postings)
+            break
     return left_dict_post_list
 
 
