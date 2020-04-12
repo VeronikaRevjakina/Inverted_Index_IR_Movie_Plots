@@ -63,7 +63,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
     left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
     operations_one_check: deque = operations.copy()
-    if len(query_words_deque) == 0 and operations_one_check.popleft() != "not":  # if only 1 word in query, ignore latest operation
+    if len(query_words_deque) == 0 and (not operations_one_check or operations_one_check.popleft() != "not"):  # if only 1 word in query, ignore latest operation
         print("One-word query")
         return left_dict_post_list
     else:
