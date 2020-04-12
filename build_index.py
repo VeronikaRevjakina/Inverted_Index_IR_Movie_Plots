@@ -42,11 +42,10 @@ def write_block_to_file(
     Write defaultdict() to json file
 
     """
-    index.pop("", None)
+    index.pop("", None)  # remove empty key
     for key in index.keys():
         index[key] = Counter(index[key])  # reformat data as doc_id: frequency_keyword_in_doc_id_file
     index = sorted(index.items())  # sort posting lists
-    ndjson.dump(index, open("index" + str(number) + ".json", 'w'))
     with open(
             BUILDED_INDEX_PATH + "index{}.json".format(str(number)), "w") as file:
         ndjson.dump(index, file)
@@ -71,7 +70,7 @@ if __name__ == "__main__":
     file_num: int = 0
     max_doc_id: int = -1
     for chunk in pd.read_csv(DATA_PATH,
-                             usecols=["Plot"],  # add "Title"
+                             usecols=["Plot"],
                              chunksize=100000
                              ):
         chunk_processed: pd.DataFrame(columns=["Plot"]) = process_data(chunk)
