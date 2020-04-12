@@ -96,16 +96,16 @@ def print_docs_from_posting_lists(posting_list: dict):
     """
     docs_dict: dict = dict(sorted(posting_list.items(),
                                   key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
-    docs_ids: np.array = np.array(list(posting_list.keys()), dtype=int)
+    docs_ids: np.array = np.array(list(docs_dict.keys()), dtype=int)
     print("Overall found documents:", len(docs_ids))
-
     docs_ids = docs_ids[:TOP_CUT]  # leave only top k items for response
-    docs_ranks = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
+    docs_tf = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
+    # docs_tf = [docs_dict[str(key)] for key in docs_ids]
+    for doc_id, tf in zip(docs_ids, docs_tf):
+        print("Document id: ", doc_id)
+        print("Times mentioned in plot: ", tf, "\n")
+        text = pd.read_csv(DATA_PATH, skiprows=doc_id, nrows=1).values[0]
 
-    for docID, rank in zip(docs_ids, docs_ranks):
-        text = pd.read_csv(DATA_PATH, skiprows=docID + 1, nrows=1, header=None).values[0]
-        print("Document id: ", docID)
-        print("Times mentioned in plot: ", rank, "\n")
         print(text)  # print all info correspond to query
 
 
