@@ -128,7 +128,7 @@ def print_docs_from_posting_lists(posting_list: dict):
     for doc_id, tf in zip(docs_ids, docs_tf):
         print("Document id: ", doc_id)
         print("Times mentioned in plot: ", tf, "\n")
-        text = pd.read_csv(DATA_PATH, skiprows=doc_id + 1, nrows=1).values[0]
+        text = pd.read_csv(DATA_PATH, skiprows=doc_id, nrows=1).values[0]
 
         print(text)  # print all info correspond to query
 
