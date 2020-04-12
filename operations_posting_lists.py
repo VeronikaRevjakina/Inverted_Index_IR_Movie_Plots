@@ -158,8 +158,7 @@ def not_postings_list(left_posting_list: dict) -> dict:
     for current_key in sorted_keys:
         if current_key > prev_key + 1:  # add chunk from prev_key to current_key
             keys_list: np.array(dtype=str) = np.array(  # update every time
-                range(prev_key + 1, int(current_key)), dtype=str
-            )
+                range(prev_key + 1, int(current_key)), dtype=str)
             if len(keys_list) > 1:
                 result_dict.update(dict.fromkeys(keys_list, 0))  # make tf zero
             else:

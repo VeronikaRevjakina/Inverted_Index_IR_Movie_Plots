@@ -1,4 +1,5 @@
 import functools
+import math
 import operator
 import sys
 from collections import defaultdict, Counter
@@ -19,7 +20,7 @@ def multi_merge_sort(number: int) -> int:
         open(
             BUILDED_INDEX_PATH + "index{}.json".format(num),
             "r",
-            # buffering=math.floor(const_size_in_bytes / (file_number - 1)),
+            buffering=math.floor(BLOCK_SIZE / (number - 1)),
         )
         for num in range(number)
     ]
@@ -34,8 +35,6 @@ def multi_merge_sort(number: int) -> int:
             if not line:
                 files.remove(file)
                 file.close()
-                # if os.path.exists(file.name):
-                #     os.remove(file.name)  # drop tmp index file
             else:
                 term, posting_list = ndjson.loads(line)[0]
                 temp_dictionary[term].append(posting_list)
@@ -70,9 +69,9 @@ def main_merge(
     files_to_read = term_file.pop(min_term)  # read next line on files where min term was
 
     min_posting_list: dict = dict(
-        functools.reduce(operator.add, map(Counter, min_posting_list))
+        functools.reduce(operator.add, map(Counter, min_posting_list))  # computing tf
     )
-    line_to_write: dict = {min_term: min_posting_list}  # for easier reading
+    line_to_write: dict = {min_term: min_posting_list}
 
     if psutil.virtual_memory().available < BLOCK_SIZE or MEMORY_LIMIT <= (
             sys.getsizeof(final_index_dict) / 1024) or process.memory_info()[0] > THRESHOLD:
@@ -92,5 +91,3 @@ def write_to_file(file_name: int, index: defaultdict(list)):
         index.items())  # sort posting lists
     with open(FINAL_INDEX_PATH + "{}.json".format(file_name), 'w') as file:
         ndjson.dump(dict_for_index, file)
-    # with open("data/files_index/{}.txt".format(file_name), "wb") as file:
-    #     pickle.dump(dict_for_index, file)

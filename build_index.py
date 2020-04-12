@@ -78,7 +78,7 @@ if __name__ == "__main__":
         # max_doc_id = chunk.index[-1]
         file_num = build_index(chunk_processed, file_num)
         # chunk_processed.to_csv(prep_file, header=None, index=False)
-    max_doc_id = np.max(list(chunk_processed.index))
+        max_doc_id = np.max(list(chunk_processed.index))
     with open("max_id_store.py", "w") as max_id_file:
         if max_doc_id == -1:
             max_id_file.write(" Build wasn't successful")
