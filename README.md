@@ -50,14 +50,3 @@ moon or rain
 cska not
 
 help not
-
-
-
-
-
-
-
-
-
-
-
