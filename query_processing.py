@@ -6,11 +6,11 @@ import pandas as pd
 from nltk import WordNetLemmatizer
 
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
-from operations_posting_lists import union_posting_lists, intersect_posting_lists
+from operations_posting_lists import union_posting_lists, intersect_posting_lists, not_postings_list
 from process_data import tokenize_query
 import numpy as np
 
-keywords: set = set(["and", "or"])
+keywords: set = set(["and", "or", "not"])
 files: list = sorted(os.listdir(FINAL_INDEX_PATH))
 file_names: list = [os.path.splitext(file)[0] for file in files]
 
@@ -30,10 +30,12 @@ def get_posting_list_for_token(token: str) -> dict:
                     if line:
                         term, posting_list_r = ndjson.loads(line)[0]
                         if token == term:  # if found token in document
+                            print("Token '{}' is processing".format(token))
                             return dict(sorted(posting_list_r.items()))  # order by doc_ids for operations
                         elif token < term:  # optimization, not go through all document, if not found token,
                             # but token already bigger value than term
-                            print("term not found")
+                            print("Word '{}' not found across all documents".format(token))
+                            return posting_list
     return posting_list
 
 
@@ -60,16 +62,21 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     left_word_query: str = query_words_deque.popleft()  # get first input word
     left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
     left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
-
-    if len(query_words_deque) == 0:  # if only 1 word in query, ignore latest operation
+    operations_one_check: deque = operations.copy()
+    if len(query_words_deque) == 0 and operations_one_check.popleft() != "not":  # if only 1 word in query, ignore latest operation
+        print("One-word query")
         return left_dict_post_list
     else:
         try:
-            while query_words_deque:
-                right_word_query: str = query_words_deque.popleft()  # get next word
-                right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
-                right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
-                curr_operation: str = operations.popleft()  # current operation match keywords
+            while True:
+                if query_words_deque:
+                    right_word_query: str = query_words_deque.popleft()  # get next word
+                    right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
+                    right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
+                    curr_operation: str = operations.popleft()  # current operation match keywords
+                else:
+                    right_dict_post_list: dict = dict()
+                    curr_operation: str = operations.popleft()
 
                 if curr_operation == "or":
                     if right_dict_post_list:
@@ -81,7 +88,10 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                         left_dict_post_list = intersect_posting_lists(left_dict_post_list,
                                                                       right_dict_post_list)  # update left postings
                         # with intersect value
-                        continue
+                elif curr_operation == "not":
+                    if not right_dict_post_list:
+                        left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
+                        # with intersect value
 
         except IndexError:
             print("End of query")

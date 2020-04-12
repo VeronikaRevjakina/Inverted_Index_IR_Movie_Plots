@@ -5,6 +5,7 @@ from typing import TextIO
 
 import ndjson
 import pandas as pd
+import numpy as np
 import psutil
 
 from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH, DATA_PATH
@@ -68,13 +69,23 @@ if __name__ == "__main__":
     create_directories()
     prep_file: TextIO
     file_num: int = 0
+    max_doc_id: int = -1
     with open('data/preprocessed/tokenized_dataset.csv', "w") as prep_file:
         for chunk in pd.read_csv(DATA_PATH,
                                  usecols=["Plot"],  # add "Title"
                                  chunksize=100000,
+                                 header=None
                                  ):
             chunk_processed: pd.DataFrame(columns=["Plot"]
                                           ) = process_data(chunk)
+            # max_doc_id = chunk.index[-1]
             file_num = build_index(chunk_processed, file_num)
             # chunk_processed.to_csv(prep_file, header=None, index=False)
+        max_doc_id = np.max(list(chunk_processed.index))
+        with open("tmp_store.py", "w") as temp_out:
+            if max_doc_id == -1:
+                temp_out.write(" Build wasn't successful")
+                temp_out.write("max_doc_id: int = {}\n".format(max_doc_id))
+            else:
+                temp_out.write("max_doc_id: int = {}\n".format(max_doc_id))
     multi_merge_sort(file_num)
