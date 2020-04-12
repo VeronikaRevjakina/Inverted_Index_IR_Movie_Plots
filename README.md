@@ -22,7 +22,7 @@
 
 Построенные блоки индекса мерджатся последовательно при помощи [merge-sort алгоритма](https://nlp.stanford.edu/IR-book/html/htmledition/blocked-sort-based-indexing-1.html),запись производится в директорию data/files_index в качестве нескольких .json файлов, названием которых является терм, для улучшения поиска .
 
-[Реализованы операции над *posting lists*](https://nlp.stanford.edu/IR-book/html/htmledition/processing-boolean-queries-1.html#sec:postingsintersection): **AND**, **OR**, **NOT**, **MULTIPLE AND**. 
+[Реализованы операции над *posting lists*](https://nlp.stanford.edu/IR-book/html/htmledition/processing-boolean-queries-1.html#sec:postingsintersection): **AND**, **OR**, **NOT**, **MULTIPLE AND**, **ORNOT**, **ANDNOT**. 
 
 В качестве ответа выдаётся общее количество найденных документов по запросу и далее TOP_CUT = 5 (можно менять в constants.py) документы, отранжированные по tf, хранящейся в индексе.
 Проверить правильность ответа можно перейдя по ссылке на Википедию (она содержится в ответе), и Ctrl+F по секции Plot.
@@ -50,3 +50,11 @@ moon or rain
 cska not
 
 help not
+
+**andnot**:
+
+cska andnot spartak
+
+**ornot**:
+
+cska ornot spain
