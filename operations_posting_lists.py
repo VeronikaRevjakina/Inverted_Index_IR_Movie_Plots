@@ -1,6 +1,6 @@
 import numpy as np
 
-from tmp_store import max_doc_id
+from max_id_store import max_doc_id
 
 
 def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:

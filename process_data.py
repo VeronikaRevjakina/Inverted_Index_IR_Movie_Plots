@@ -24,7 +24,7 @@ def tokenize_df(df: pd.DataFrame(columns=["Plot"])
 
     """
     df['Plot'].replace(r"[^\w\s]", " ", regex=True, inplace=True)  # Removes all punctuations
-    df['Plot'].replace(r"\d+", " ", regex=True, inplace=True)  # Replaces digits
+    # df['Plot'].replace(r"\d+", " ", regex=True, inplace=True)  # Replaces digits
     df['Plot'].replace(r"\b[a-zA-Z]\b", " ", regex=True, inplace=True)  # Removes all single characters
     # df['Plot'] = df["Plot"].apply(lambda row: word_tokenize(row)) alternative
     df["Plot"] = df["Plot"].astype(str).str.lower()
@@ -39,7 +39,7 @@ def tokenize_query(query: string) -> list:
     """
     query = query.lower().strip()
     query = re.sub(r"[^\w\s]", " ", query)  # Removes all punctuations
-    query = re.sub(r"\d+", " ", query)  # Replaces digits
+    # query = re.sub(r"\d+", " ", query)  # Replaces digits
     query = re.sub(r"\b[a-zA-Z]\b", " ", query)  # Removes all single characters
     query_list = query.split()
     return query_list
