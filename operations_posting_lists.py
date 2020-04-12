@@ -59,13 +59,56 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
 def intersect_many_posting_lists(list_of_posting_dicts: list) -> dict:
     """
 
-    Computes intersection between 2 non-empty sorted posting lists as dicts
+    Computes intersection between many posting lists
     """
     list_of_posting_dicts.sort(key=len)
     result_dict: dict = list_of_posting_dicts.pop()  # get shortest
     while list_of_posting_dicts and result_dict:
         next_shortest_dict: dict = list_of_posting_dicts.pop()
         result_dict = intersect_two_posting_lists(result_dict, next_shortest_dict)  # shortest with next by len
+    return result_dict
+
+
+def subtract_from_left_right_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
+    """
+
+    Computes subtraction from left posting list right posting list non-empty
+    """
+    iter_left: iter = iter(left_post_list.items())  # iter over doc_ids
+    iter_right: iter = iter(right_post_list.items())
+    doc_id1, tf1 = next(iter_left)
+    doc_id2, tf2 = next(iter_right)
+    flag_tail: bool = False
+    result_dict: dict = dict()
+    while True:
+        if doc_id1 == doc_id2:
+            try:
+                doc_id1, tf1 = next(iter_left)
+            except StopIteration:
+                break  # reached end of first list, subtract ends
+            try:
+                doc_id2, tf2 = next(iter_right)
+            except StopIteration:
+                flag_tail = True  # end, but need to add left tail
+                break
+        elif doc_id1 < doc_id2:
+            result_dict[doc_id1] = tf1
+            try:
+                doc_id1, tf1 = next(iter_left)
+            except StopIteration:
+                break  # end of lest
+        else:
+            try:
+                doc_id2, tf2 = next(iter_right)
+            except StopIteration:
+                flag_tail = True  # end of right, need to add tail
+                break
+    tail: dict = dict(iter_left)  # automatically gets left over values
+    if flag_tail and (doc_id1 not in result_dict):
+        result_dict[doc_id1] = tf1  # for one current doc_id1, doc_id2 interrupted
+    if tail:
+        result_dict.update(tail)
+
     return result_dict
 
 

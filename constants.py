@@ -6,7 +6,4 @@ BUILDED_INDEX_PATH: str = "data/builded_index/"
 FINAL_INDEX_PATH: str = "data/files_index/"
 TOP_CUT: int = 5
 DATA_PATH: str = "wiki_movie_plots_deduped.csv"
-
-
-
-
+KEYWORDS: set = {"and", "or", "not", "andnot", "ornot"}

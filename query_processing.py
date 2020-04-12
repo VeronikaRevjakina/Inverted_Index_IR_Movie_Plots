@@ -2,16 +2,15 @@ import os
 from collections import deque
 
 import ndjson
+import numpy as np
 import pandas as pd
 from nltk import WordNetLemmatizer
 
-from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
-from operations_posting_lists import union_posting_lists, intersect_two_posting_lists, not_postings_list, \
-    intersect_many_posting_lists
+from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH, KEYWORDS
+from operations_posting_lists import union_posting_lists, not_postings_list, \
+    intersect_many_posting_lists, subtract_from_left_right_posting_lists
 from process_data import tokenize_query
-import numpy as np
 
-keywords: set = set(["and", "or", "not"])
 files: list = sorted(os.listdir(FINAL_INDEX_PATH))
 file_names: list = [os.path.splitext(file)[0] for file in files]
 
@@ -51,7 +50,7 @@ def query_processing(query_in: str
     query_words_deque: deque = deque(query_list[::2])  # same only uneven
     operations_set: set = set(np.unique(operations))
 
-    if operations_set.intersection(keywords) != operations_set:  # check operations only contains keywords
+    if operations_set.intersection(KEYWORDS) != operations_set:  # check operations only contains keywords
         print("The query doesn't match the format.")
         return {}  # quit processing
     if query_words_deque:
@@ -74,7 +73,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
 
             if curr_operation != "and":  # and only process by multiple
 
-                if multiple_postings:  # if reached end of and list (next operation)
+                if multiple_postings:  # if reached end of and list (next operation for exp: or)
                     left_dict_post_list = intersect_many_posting_lists(multiple_postings)
                     multiple_postings = list()  # clean for future
 
@@ -87,6 +86,14 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                     if not right_dict_post_list:
                         left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
                         # with intersect value
+                elif curr_operation == "ornot":
+                    if right_word_query:
+                        left_dict_post_list = union_posting_lists(left_dict_post_list,
+                                                                  not_postings_list(right_dict_post_list))
+                elif curr_operation == "andnot":
+                    if right_word_query:
+                        left_dict_post_list = subtract_from_left_right_posting_lists(left_dict_post_list,
+                                                                                     right_dict_post_list)
             else:
                 if not flag_next:  # there are no more combined with and tokens
                     if multiple_postings:
@@ -101,7 +108,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
         except IndexError:
             # print("End of query")
             if multiple_postings:
-                left_dict_post_list = intersect_many_posting_lists(multiple_postings)
+                left_dict_post_list = intersect_many_posting_lists(multiple_postings)  # all clearly and processed here
             break
     return left_dict_post_list
 
