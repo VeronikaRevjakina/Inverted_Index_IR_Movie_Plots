@@ -6,7 +6,7 @@ import pandas as pd
 from nltk import WordNetLemmatizer
 
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH
-from operations_posting_lists import union_posting_lists
+from operations_posting_lists import union_posting_lists, intersect_posting_lists
 from process_data import tokenize_query
 import numpy as np
 
@@ -76,12 +76,12 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                         left_dict_post_list = union_posting_lists(left_dict_post_list,
                                                                   right_dict_post_list)  # update left postings with
                         # united value
+                elif curr_operation == "and":
+                    if right_dict_post_list:
+                        left_dict_post_list = intersect_posting_lists(left_dict_post_list,
+                                                                      right_dict_post_list)  # update left postings
+                        # with intersect value
                         continue
-                # elif curr_operation == "and":
-                #     if right_post_list:
-                #         left_post_list = intersect_posting_lists(left_post_list,
-                #                                              right_post_list)  # update left postings with intersect value
-                #         continue
 
         except IndexError:
             print("End of query")
