@@ -63,7 +63,7 @@ def intersect_posting_lists(left_post_list: dict, right_post_list: dict) -> dict
 
     result_dict: dict = dict()
     while True:
-        if doc_id1[0] == doc_id2[0]:
+        if doc_id1 == doc_id2:
             result_dict[doc_id1] = tf1 + tf2  # sum tf for doc_id
             try:
                 doc_id1, tf1 = next(iter_left)
@@ -73,14 +73,12 @@ def intersect_posting_lists(left_post_list: dict, right_post_list: dict) -> dict
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
                 break
-        elif doc_id1[0] < doc_id2[0]:
-            result_dict[doc_id1] = tf1
+        elif doc_id1 < doc_id2:
             try:
                 doc_id1, tf1 = next(iter_left)
             except StopIteration:
                 break
         else:
-            result_dict[doc_id2] = tf2
             try:
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
