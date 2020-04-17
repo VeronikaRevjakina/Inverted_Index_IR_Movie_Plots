@@ -66,10 +66,10 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     flag_next: bool = False
     while True:
         try:
+            curr_operation: str = operations.popleft()  # current operation match keywords
             right_word_query: str = query_words_deque.popleft()  # get next word
             right_word_query = WordNetLemmatizer().lemmatize(right_word_query)
             right_dict_post_list: dict = get_posting_list_for_token(right_word_query)
-            curr_operation: str = operations.popleft()  # current operation match keywords
 
             if curr_operation != "and":  # and only process by multiple
 
@@ -82,10 +82,6 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                         left_dict_post_list = union_posting_lists(left_dict_post_list,
                                                                   right_dict_post_list)  # update left postings with
                         # with intersect value
-                # elif curr_operation == "not":
-                #     if not right_dict_post_list:
-                #         left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
-                # with intersect value
                 elif curr_operation == "ornot":
                     left_dict_post_list = union_posting_lists(left_dict_post_list,
                                                               not_postings_list(right_dict_post_list))
@@ -106,6 +102,9 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
 
         except IndexError:
             # print("End of query")
+            if curr_operation == "not":  # empty right already checked
+                left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
+            # with intersect value
             if multiple_postings:
                 left_dict_post_list = intersect_many_posting_lists(multiple_postings)  # all clearly and processed here
             break
