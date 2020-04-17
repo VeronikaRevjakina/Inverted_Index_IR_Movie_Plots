@@ -34,34 +34,24 @@
 
 2. Запуск **query_processing.py** с введением запроса в консоли, соответствующем формату.
 
-**Примеры запросов, валидные формату** (слово - операция - слово - операция - слово):
+**Примеры запросов, валидные формату** (слово - операция - слово - операция - слово и тд):
 
-**one-word**:
+cska and coach and 1956 ---> Legend №17
 
-fight
+cska and coach ----> Legend №17 and Going Vertical
 
-help
+harry and potter andnot chamber  ----> HP films except "Chamber of Secrets"
 
-**and**, **multi-and**:
+Voldemort or Harry and Potter
 
-cska and coach and sport
-
-moon and shining
-
-**or**:
-
-moon or rain
-
-**not**:
+cska and coach or soviet 
 
 cska not
 
 help not
 
-**andnot**:
-
 cska andnot spartak
 
-**ornot**:
-
 cska ornot spain
+
+Voldemort  ----> HP films
