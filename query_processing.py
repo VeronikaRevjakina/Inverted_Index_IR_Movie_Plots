@@ -90,7 +90,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                     left_dict_post_list = union_posting_lists(left_dict_post_list,
                                                               not_postings_list(right_dict_post_list))
                 elif curr_operation == "andnot":
-                    if right_dict_post_list:
+                    if left_dict_post_list and right_dict_post_list:
                         left_dict_post_list = subtract_from_left_right_posting_lists(left_dict_post_list,
                                                                                      right_dict_post_list)
             else:
