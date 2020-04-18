@@ -25,7 +25,7 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
         return left_post_list
 
     while not flag_stop_iter:
-        if doc_id1[0] == doc_id2[0]:
+        if doc_id1 == doc_id2:
             result_dict[doc_id1] = tf1 + tf2  # sum tf for doc_id
             try:
                 doc_id1, tf1 = next(iter_left)
@@ -35,7 +35,7 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
                 flag_stop_iter = iter_right
-        elif int(doc_id1[0]) < int(doc_id2[0]):
+        elif int(doc_id1) < int(doc_id2):
             result_dict[doc_id1] = tf1
             try:
                 doc_id1, tf1 = next(iter_left)
