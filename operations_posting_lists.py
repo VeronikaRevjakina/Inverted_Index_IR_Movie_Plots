@@ -10,6 +10,7 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
     """
 
     result_dict: dict = dict()
+    flag_stop_iter = False  # by default
 
     try:
         iter_left: iter = iter(left_post_list.items())
@@ -23,44 +24,42 @@ def union_posting_lists(left_post_list: dict, right_post_list: dict) -> dict:
     except StopIteration:
         return left_post_list
 
-    flag_non_empty1: bool = True
-    flag_non_empty2: bool = True
-
-    while flag_non_empty1 or flag_non_empty2:
-        if not flag_non_empty1:
-            result_dict[doc_id2] = tf2
-            try:
-                doc_id2, tf2 = next(iter_right)
-            except StopIteration:
-                flag_non_empty2 = False
-        elif not flag_non_empty2:
-            result_dict[doc_id1] = tf1
-            try:
-                doc_id1, tf1 = next(iter_left)
-            except StopIteration:
-                flag_non_empty1 = False
-        elif doc_id1[0] == doc_id2[0]:
+    while not flag_stop_iter:
+        if doc_id1[0] == doc_id2[0]:
             result_dict[doc_id1] = tf1 + tf2  # sum tf for doc_id
             try:
                 doc_id1, tf1 = next(iter_left)
             except StopIteration:
-                flag_non_empty1 = False
+                flag_stop_iter = iter_left
             try:
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
-                flag_non_empty2 = False
-        elif doc_id1[0] < doc_id2[0]:
+                flag_stop_iter = iter_right
+        elif int(doc_id1[0]) < int(doc_id2[0]):
             result_dict[doc_id1] = tf1
             try:
                 doc_id1, tf1 = next(iter_left)
             except StopIteration:
-                flag_non_empty1 = False
+                flag_stop_iter = iter_left
         else:
             result_dict[doc_id2] = tf2
             try:
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
-                flag_non_empty2 = False
+                flag_stop_iter = iter_right
+
+    if flag_stop_iter == iter_left:  # if stopped by empty left value
+        remains_dict: dict = dict(iter_right)
+    elif flag_stop_iter == iter_right:
+        remains_dict: dict = dict(iter_left)
+
+    if doc_id1 not in result_dict:  # for last value appeared to be processed
+        result_dict[doc_id1] = tf1
+    if doc_id2 not in result_dict:
+        result_dict[doc_id2] = tf2
+
+    if remains_dict:  # remaining not empty
+        result_dict.update(remains_dict)
 
     return result_dict
 
@@ -71,7 +70,7 @@ def intersect_many_posting_lists(list_of_posting_dicts: list) -> dict:
     Computes intersection between many posting lists
     """
     list_of_posting_dicts.sort(key=len)
-    result_dict: dict = list_of_posting_dicts.pop()  # get shortest
+    result_dict: dict = list_of_posting_dicts.pop()
     while list_of_posting_dicts and result_dict:
         next_shortest_dict: dict = list_of_posting_dicts.pop()
         result_dict = intersect_two_posting_lists(result_dict, next_shortest_dict)  # shortest with next by len
@@ -100,7 +99,7 @@ def subtract_from_left_right_posting_lists(left_post_list: dict, right_post_list
             except StopIteration:
                 flag_tail = True  # end, but need to add left tail
                 break
-        elif doc_id1 < doc_id2:
+        elif int(doc_id1) < int(doc_id2):
             result_dict[doc_id1] = tf1
             try:
                 doc_id1, tf1 = next(iter_left)
@@ -137,13 +136,10 @@ def intersect_two_posting_lists(left_post_list: dict, right_post_list: dict) -> 
             result_dict[doc_id1] = tf1 + tf2  # sum tf for doc_id
             try:
                 doc_id1, tf1 = next(iter_left)
-            except StopIteration:
-                break  # reached end of list, intersection ends
-            try:
                 doc_id2, tf2 = next(iter_right)
             except StopIteration:
-                break
-        elif doc_id1 < doc_id2:
+                break  # reached end of list, intersection ends
+        elif int(doc_id1) < int(doc_id2):
             try:
                 doc_id1, tf1 = next(iter_left)
             except StopIteration:
@@ -165,7 +161,7 @@ def not_postings_list(left_posting_list: dict) -> dict:
     sorted_keys = np.array(list(left_posting_list.keys()), dtype=int)
     # sorted_keys.sort()
     for current_key in sorted_keys:
-        if current_key > prev_key + 1:  # add chunk from prev_key to current_key
+        if int(current_key) > int(prev_key) + 1:  # add chunk from prev_key to current_key
             keys_list: np.array(dtype=str) = np.array(  # update every time
                 range(prev_key + 1, int(current_key)), dtype=str)
             if len(keys_list) > 1:
@@ -174,7 +170,7 @@ def not_postings_list(left_posting_list: dict) -> dict:
                 result_dict[keys_list[0]] = 0  # in case no diff between prev_key and current_key
         prev_key = current_key
 
-    if max_doc_id > prev_key + 1:  # left after last key to max
+    if int(max_doc_id) > int(prev_key) + 1:  # left after last key to max
         result_dict.update(dict.fromkeys(
             np.array(range(prev_key + 1, max_doc_id + 1), dtype=str), 0))
     elif max_doc_id == prev_key + 1:  # eof

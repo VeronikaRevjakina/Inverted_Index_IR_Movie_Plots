@@ -31,7 +31,7 @@ def get_posting_list_for_token(token: str) -> dict:
                         term, posting_list_r = ndjson.loads(line)[0]
                         if token == term:  # if found token in document
                             print("Token '{}' is processing".format(token))
-                            return dict(sorted(posting_list_r.items(), key=lambda x: int(x[0])))  
+                            return dict(sorted(posting_list_r.items(), key=lambda x: int(x[0])))
                         elif token < term:  # optimization, not go through all document, if not found token,
                             # but token already bigger value than term
                             print("Word '{}' not found across all documents".format(token))
