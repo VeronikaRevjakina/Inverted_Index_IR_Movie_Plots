@@ -12,14 +12,9 @@ def build_embeddings():
 
     Build embeddings for each document in collection using DistilBERT, store as csv files in BERT_PATH folder
     """
-    # For DistilBERT:
-    model_class, tokenizer_class, pretrained_weights = (
-        ppb.DistilBertModel, ppb.DistilBertTokenizer, 'distilbert-base-uncased')
-    # Load pretrained model/tokenizer
-    tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
-    model = model_class.from_pretrained(pretrained_weights)
+    model, tokenizer = get_model_and_tokenizer()
 
-    file_count: int = 0
+    file_count: int = 0  # for naming and merge
     for df in pd.read_csv(DATA_PATH2,
                           usecols=["Plot"],
                           chunksize=100  # otherwise too slow or buy memory
@@ -29,12 +24,7 @@ def build_embeddings():
                                                                               max_length=MAX_LEN_BERT)))
         # prepare input for BERT
         padded = np.array([i + [0] * (MAX_LEN_BERT - len(i)) for i in df['Plot tokenized'].values])
-        attention_mask = np.where(padded != 0, 1, 0)  # to BERT ignore padding
-        input_ids = torch.LongTensor(padded)
-        attention_mask = torch.LongTensor(attention_mask)
-        with torch.no_grad():
-            last_hidden_states = model(input_ids, attention_mask=attention_mask)
-        features = last_hidden_states[0][:, 0, :].numpy().tolist()  # BERT output
+        features = get_features_processed_by_bert(model, padded)
         df['BERT output'] = features
         df.to_csv(BERT_DATA_PATH + f'data_bert{file_count}.csv')
         file_count = file_count + 1
@@ -42,7 +32,35 @@ def build_embeddings():
     return file_count
 
 
-def combine_one_df(file_count: int):
+def get_features_processed_by_bert(model, padded):
+    """
+
+    Perform model on input padded and nask matrix, get output of DistilBERT embeddings builded
+    """
+    attention_mask = np.where(padded != 0, 1, 0)  # to BERT ignore padding
+    input_ids = torch.LongTensor(padded)
+    attention_mask = torch.LongTensor(attention_mask)
+    with torch.no_grad():
+        last_hidden_states = model(input_ids, attention_mask=attention_mask)
+    features = last_hidden_states[0][:, 0, :].numpy().tolist()  # BERT output
+    return features
+
+
+def get_model_and_tokenizer():
+    """
+
+    Get pretraind model and tokenizer DistilBERT
+    """
+    # For DistilBERT:
+    model_class, tokenizer_class, pretrained_weights = (
+        ppb.DistilBertModel, ppb.DistilBertTokenizer, 'distilbert-base-uncased')
+    # Load pretrained model/tokenizer
+    tokenizer = tokenizer_class.from_pretrained(pretrained_weights)
+    model = model_class.from_pretrained(pretrained_weights)
+    return model, tokenizer
+
+
+def merge_one_df(file_count: int):
     """
 
     Merges all files for batches in one result.csv df
@@ -55,4 +73,4 @@ def combine_one_df(file_count: int):
 if __name__ == "__main__":
     create_directories(BERT_DATA_PATH)
     count = build_embeddings()
-    combine_one_df(count)
+    merge_one_df(count)

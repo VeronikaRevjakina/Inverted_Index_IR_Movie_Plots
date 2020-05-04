@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from nltk import WordNetLemmatizer
 
+from bert_embeddings import get_model_and_tokenizer, get_features_processed_by_bert
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH, KEYWORDS
 from operations_posting_lists import union_posting_lists, not_postings_list, \
     intersect_many_posting_lists, subtract_from_left_right_posting_lists
@@ -138,6 +139,12 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
 
     Print in console document response on query (plot) ranked by embeddings cosine similarity
     """
+    query_words_str: str = " ".join(query_words_deque)
+    model, tokenizer = get_model_and_tokenizer()
+    tokenized = tokenizer.encode(query_words_str, add_special_tokens=True)
+    query_embedding = get_features_processed_by_bert(model, np.array(tokenized).reshape(1, -1))[0]  # reshape to get
+    # matrix as (1,tokenized), [0] to get just element from list of lists
+    
     docs_dict: dict = dict(sorted(posting_list.items(),
                                   key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
     docs_ids: np.array = np.array(list(docs_dict.keys()), dtype=int)
@@ -155,4 +162,4 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
 
 if __name__ == "__main__":
     query = input('Enter your query:')
-    res = query_processing(query, False)
+    res = query_processing(query, True)
