@@ -4,8 +4,10 @@ from collections import deque
 import ndjson
 import numpy as np
 import pandas as pd
+import ast
 from nltk import WordNetLemmatizer
 
+from sklearn.metrics.pairwise import cosine_similarity
 from bert_embeddings import get_model_and_tokenizer, get_features_processed_by_bert
 from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH, KEYWORDS
 from operations_posting_lists import union_posting_lists, not_postings_list, \
@@ -142,22 +144,31 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
     query_words_str: str = " ".join(query_words_deque)
     model, tokenizer = get_model_and_tokenizer()
     tokenized = tokenizer.encode(query_words_str, add_special_tokens=True)
-    query_embedding = get_features_processed_by_bert(model, np.array(tokenized).reshape(1, -1))[0]  # reshape to get
+    query_embedding = get_features_processed_by_bert(model, np.array(tokenized).reshape(1, -1))  # reshape to get
+    query_embedding = np.array(query_embedding[0]).reshape(1, -1)
     # matrix as (1,tokenized), [0] to get just element from list of lists
-    
-    docs_dict: dict = dict(sorted(posting_list.items(),
-                                  key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
+    docs_dict: dict = dict(posting_list.items())  # get dict from posting_list with tf
     docs_ids: np.array = np.array(list(docs_dict.keys()), dtype=int)
     print("Overall found documents:", len(docs_ids))
-    docs_ids = docs_ids[:TOP_CUT]  # leave only top k items for response
-    docs_tf = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
-    # docs_tf = [docs_dict[str(key)] for key in docs_ids]
-    for doc_id, tf in zip(docs_ids, docs_tf):
-        print("Document id: ", doc_id)
-        print("Times mentioned in plot: ", tf, "\n")
-        text = pd.read_csv(DATA_PATH, skiprows=doc_id, nrows=1).values[0]
 
-        print(text)  # print all info correspond to query
+    docs_dict_similarity = dict()
+    for doc_id in docs_ids:
+        doc_embedding = pd.read_csv("result.csv", skiprows=doc_id, nrows=1).values[0][4]
+        doc_embedding = ast.literal_eval(doc_embedding)  # here list 768
+        doc_embedding = np.array(doc_embedding).reshape(1, -1)
+        docs_dict_similarity[doc_id] = cosine_similarity(query_embedding,  doc_embedding)[0][0]
+    docs_dict_similarity = dict(sorted(docs_dict_similarity.items(),
+                                  key = lambda x: x[1], reverse=True))  # sort docs by similarity as doc_id:similarity
+    docs_ids = np.array(list(docs_dict_similarity.keys()), dtype=int)  # get from sorted
+    docs_ids = docs_ids[:TOP_CUT]  # leave only top k items for response
+    docs_similarity = np.array(list(docs_dict_similarity.values()))[:TOP_CUT]
+    for doc_id, doc_similarity in zip(docs_ids, docs_similarity):
+        print("Document id: ", doc_id)
+        print("Counted cosine similarity with query: ", doc_similarity, "\n")
+        text = pd.read_csv("result.csv", skiprows=doc_id, nrows=1).values[0]
+
+        # print(text[1], "\n")  # print name of film
+        print(text[2])  # print considered part of plot
 
 
 if __name__ == "__main__":
