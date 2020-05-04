@@ -46,12 +46,17 @@ Voldemort or Harry and Potter
 
 cska and coach or soviet 
 
-cska not
-
-help not
-
 cska andnot spartak
 
 cska ornot spain
 
 Voldemort  ----> HP films
+
+simple NOT can be checked with 1st term being invalid and second valid with ornot:
+bhbhkbu ornot cska
+
+check amountof documents returned:
+study 1133
+work 7759
+study and work 356
+study or work 8536 = 1133-356+7759
