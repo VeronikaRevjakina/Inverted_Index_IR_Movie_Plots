@@ -7,5 +7,4 @@ BERT_DATA_PATH: str = "data/bert_processed/"
 TOP_CUT: int = 5
 MAX_LEN_BERT: int = 512
 DATA_PATH: str = "wiki_movie_plots_deduped.csv"
-DATA_PATH2: str = "wiki_movie_plots_deduped2.csv"
 KEYWORDS: set = {"and", "or", "not", "andnot", "ornot"}
