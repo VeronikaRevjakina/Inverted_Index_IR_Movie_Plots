@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import psutil
 
-from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH, DATA_PATH
+from constants import BLOCK_SIZE, MEMORY_LIMIT, THRESHOLD, BUILDED_INDEX_PATH, DATA_PATH, FINAL_INDEX_PATH
 from helper_funcs import create_directories, process
 from merge import multi_merge_sort
 from process_data import lemma_df, tokenize_df
@@ -21,7 +21,7 @@ def build_index(
     """
     SPMI algorithm build index in blocks using defaultdict()
     """
-    index: defaultdict = defaultdict(list)
+    index = defaultdict(list)
     for docID, terms_list in df.iterrows():  # stream implemented as reading rows
         for term in terms_list.values[0]:
             index[term].append(docID)  # add posting list, check for existing inside
@@ -65,7 +65,8 @@ def process_data(
 
 
 if __name__ == "__main__":
-    create_directories()
+    create_directories(BUILDED_INDEX_PATH)
+    create_directories(FINAL_INDEX_PATH)
     prep_file: TextIO
     file_num: int = 0
     max_doc_id: int = -1
@@ -74,14 +75,10 @@ if __name__ == "__main__":
                              chunksize=100000
                              ):
         chunk_processed: pd.DataFrame(columns=["Plot"]) = process_data(chunk)
-        # max_doc_id = chunk.index[-1]
         file_num = build_index(chunk_processed, file_num)
-        # chunk_processed.to_csv(prep_file, header=None, index=False)
-        max_doc_id = np.max(list(chunk_processed.index))
+        max_doc_id = np.max(chunk_processed.index)
     with open("max_id_store.py", "w") as max_id_file:
         if max_doc_id == -1:
             max_id_file.write(" Build wasn't successful")
-            max_id_file.write("max_doc_id: int = {}\n".format(max_doc_id))
-        else:
-            max_id_file.write("max_doc_id: int = {}\n".format(max_doc_id))
+        max_id_file.write("max_doc_id: int = {}\n".format(max_doc_id))
     multi_merge_sort(file_num)

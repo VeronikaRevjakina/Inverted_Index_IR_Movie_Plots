@@ -3,16 +3,14 @@ import shutil
 
 import psutil
 
-from constants import BUILDED_INDEX_PATH, FINAL_INDEX_PATH
-
 process = psutil.Process(os.getpid())
 
 
-def create_directories():
+def create_directories(path: str):
     """
-    Create packages for data storing and clean files if exist.
+    Create packages for data storing and clean files if exist on path.
     """
-    for folder in [BUILDED_INDEX_PATH, FINAL_INDEX_PATH]:
+    for folder in [path]:
         if not os.path.isdir(folder):
             os.makedirs(folder)
         else:
