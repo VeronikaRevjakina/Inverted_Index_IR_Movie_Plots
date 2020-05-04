@@ -39,7 +39,7 @@ def get_posting_list_for_token(token: str) -> dict:
     return posting_list
 
 
-def query_processing(query_in: str
+def query_processing(query_in: str, bert_flag: bool
                      ) -> dict:
     """
 
@@ -55,7 +55,10 @@ def query_processing(query_in: str
         return {}  # quit processing
     if query_words_deque:
         final_postings: dict = get_processed_posting_list_operations(query_words_deque.copy(), operations)
-        print_docs_from_posting_lists(final_postings)
+        if not bert_flag:
+            print_docs_from_posting_lists_rank_tf(final_postings)
+        else:
+            print_docs_from_posting_lists_rank_bert(query_words_deque, final_postings)
 
 
 def get_processed_posting_list_operations(query_words_deque: deque, operations: deque) -> dict:
@@ -110,10 +113,30 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     return left_dict_post_list
 
 
-def print_docs_from_posting_lists(posting_list: dict):
+def print_docs_from_posting_lists_rank_tf(posting_list: dict):
     """
 
-    Print in console document response on query (plot)
+    Print in console document response on query (plot) ranked by tf
+    """
+    docs_dict: dict = dict(sorted(posting_list.items(),
+                                  key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
+    docs_ids: np.array = np.array(list(docs_dict.keys()), dtype=int)
+    print("Overall found documents:", len(docs_ids))
+    docs_ids = docs_ids[:TOP_CUT]  # leave only top k items for response
+    docs_tf = np.array(list(docs_dict.values()), dtype=int)[:TOP_CUT]
+    # docs_tf = [docs_dict[str(key)] for key in docs_ids]
+    for doc_id, tf in zip(docs_ids, docs_tf):
+        print("Document id: ", doc_id)
+        print("Times mentioned in plot: ", tf, "\n")
+        text = pd.read_csv(DATA_PATH, skiprows=doc_id, nrows=1).values[0]
+
+        print(text)  # print all info correspond to query
+
+
+def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_list: dict):
+    """
+
+    Print in console document response on query (plot) ranked by embeddings cosine similarity
     """
     docs_dict: dict = dict(sorted(posting_list.items(),
                                   key=lambda x: x[1], reverse=True))  # sort posting lists by tf as doc_id:tf
@@ -132,4 +155,4 @@ def print_docs_from_posting_lists(posting_list: dict):
 
 if __name__ == "__main__":
     query = input('Enter your query:')
-    res = query_processing(query)
+    res = query_processing(query, False)
