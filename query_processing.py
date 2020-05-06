@@ -9,10 +9,11 @@ from nltk import WordNetLemmatizer
 
 from sklearn.metrics.pairwise import cosine_similarity
 from bert_embeddings import get_model_and_tokenizer, get_embeddings_processed_by_bert
-from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH, KEYWORDS
+from constants import FINAL_INDEX_PATH, TOP_CUT, DATA_PATH, KEYWORDS, BERT_DATA_PATH
 from operations_posting_lists import union_posting_lists, not_postings_list, \
     intersect_many_posting_lists, subtract_from_left_right_posting_lists
 from process_data import tokenize_query
+from query_spelling_correction import get_spelling_corrected_query
 
 files: list = sorted(os.listdir(FINAL_INDEX_PATH))
 file_names: list = [os.path.splitext(file)[0] for file in files]
@@ -68,7 +69,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
     left_word_query: str = query_words_deque.popleft()  # get first input word
     left_word_query = WordNetLemmatizer().lemmatize(left_word_query)
     left_dict_post_list: dict = get_posting_list_for_token(left_word_query)
-    multiple_postings: list = list()
+    multiple_postings = list()
     flag_next: bool = False
     while True:
         try:
@@ -105,7 +106,7 @@ def get_processed_posting_list_operations(query_words_deque: deque, operations: 
                     flag_next = True
                     multiple_postings = list()
 
-        except IndexError:
+        except (IndexError, StopIteration):
             # print("End of query")
             # if curr_operation == "not":  # empty right already checked
             #     left_dict_post_list = not_postings_list(left_dict_post_list)  # update left postings
@@ -166,13 +167,12 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
     for doc_id, doc_similarity in zip(docs_ids, docs_similarity):
         print("Document id: ", doc_id)
         print("Counted cosine similarity with query: ", doc_similarity, "\n")
-        text = pd.read_csv("result.csv", skiprows=doc_id, nrows=1).values[0]
-        # text = pd.read_csv(DATA_PATH, skiprows=doc_id, nrows=1).values[0][1]
-        # print(text[1], "\n")  # print name of film
-        # print(text[1])  # print title of film
-        print(text[2])  # print considered part of plot, 2 is hardcoded for plot
+        text = pd.read_csv(BERT_DATA_PATH + f'result.csv', skiprows=doc_id, nrows=1).values[0]
+        print(text[1])  # print title of film
+        print(text[2])  # print  plot, 2 is hardcoded for plot
 
 
 if __name__ == "__main__":
     query = input('Enter your query:')
-    res = query_processing(query, True)
+    query_corrected = get_spelling_corrected_query(query)
+    res = query_processing(query_corrected, True)  # True is flag for using embeddings , False for tf

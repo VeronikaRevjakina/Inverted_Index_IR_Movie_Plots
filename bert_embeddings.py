@@ -3,11 +3,11 @@ import pandas as pd
 import torch
 import transformers as ppb
 
-from constants import DATA_PATH2, BERT_DATA_PATH, MAX_LEN_BERT
+from constants import DATA_PATH, BERT_DATA_PATH, MAX_LEN_BERT
 from helper_funcs import create_directories
 
 
-def build_embeddings():
+def build_embeddings() -> int:
     """
 
     Build embeddings for each document in collection using DistilBERT, store as csv files in BERT_PATH folder
@@ -15,8 +15,8 @@ def build_embeddings():
     model, tokenizer = get_model_and_tokenizer()
 
     file_count: int = 0  # for naming and merge
-    for df in pd.read_csv(DATA_PATH2,
-                          usecols=["Plot"],
+    for df in pd.read_csv(DATA_PATH,
+                          usecols=["Title", "Plot"],
                           chunksize=100  # otherwise too slow or buy memory
                           ):
         df['Plot tokenized'] = df['Plot'].apply((lambda row: tokenizer.encode(row,
@@ -24,7 +24,7 @@ def build_embeddings():
                                                                               max_length=MAX_LEN_BERT)))
         # prepare input for BERT
         padded = np.array([i + [0] * (MAX_LEN_BERT - len(i)) for i in df['Plot tokenized'].values])
-        features = get_features_processed_by_bert(model, padded)
+        features = get_embeddings_processed_by_bert(model, padded)
         df['BERT output'] = features
         df.to_csv(BERT_DATA_PATH + f'data_bert{file_count}.csv')
         file_count = file_count + 1
@@ -32,7 +32,7 @@ def build_embeddings():
     return file_count
 
 
-def get_features_processed_by_bert(model, padded):
+def get_embeddings_processed_by_bert(model: ppb.DistilBertModel, padded: ppb.DistilBertTokenizer) -> list:
     """
 
     Perform model on input padded and nask matrix, get output of DistilBERT embeddings builded
@@ -42,11 +42,11 @@ def get_features_processed_by_bert(model, padded):
     attention_mask = torch.LongTensor(attention_mask)
     with torch.no_grad():
         last_hidden_states = model(input_ids, attention_mask=attention_mask)
-    features = last_hidden_states[0][:, 0, :].numpy().tolist()  # BERT output
-    return features
+    embeddings = last_hidden_states[0][:, 0, :].numpy().tolist()  # BERT output
+    return embeddings
 
 
-def get_model_and_tokenizer():
+def get_model_and_tokenizer() -> [ppb.DistilBertModel, ppb.DistilBertTokenizer]:
     """
 
     Get pretraind model and tokenizer DistilBERT
