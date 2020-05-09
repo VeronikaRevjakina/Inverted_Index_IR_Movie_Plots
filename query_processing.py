@@ -154,7 +154,8 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
 
     docs_dict_similarity = dict()  # new dict to store doc_id: similarity
     for doc_id in docs_ids:
-        doc_embedding = pd.read_csv("result.csv", skiprows=doc_id, nrows=1).values[0][4]  # 4 is hardcoded 'BERT output'
+        doc_embedding = pd.read_csv(BERT_DATA_PATH + f'result.csv', skiprows=doc_id, nrows=1).values[0][5]
+        # 5 is hardcoded 'BERT output'
         doc_embedding = ast.literal_eval(doc_embedding)  # here list 768
         doc_embedding = np.array(doc_embedding).reshape(1, -1)  # for input to cosine similarity
         docs_dict_similarity[doc_id] = cosine_similarity(query_embedding, doc_embedding)[0][0]
@@ -168,8 +169,8 @@ def print_docs_from_posting_lists_rank_bert(query_words_deque: deque, posting_li
         print("Document id: ", doc_id)
         print("Counted cosine similarity with query: ", doc_similarity, "\n")
         text = pd.read_csv(BERT_DATA_PATH + f'result.csv', skiprows=doc_id, nrows=1).values[0]
-        print(text[1])  # print title of film
-        print(text[2])  # print  plot, 2 is hardcoded for plot
+        print(text[2])  # print title of film
+        print(text[3])  # print  plot, 2 is hardcoded for plot
 
 
 if __name__ == "__main__":
