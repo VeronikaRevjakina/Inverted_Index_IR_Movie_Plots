@@ -125,10 +125,18 @@ def intersect_two_posting_lists(left_post_list: dict, right_post_list: dict) -> 
 
     Computes intersection between 2 non-empty sorted posting lists as dicts
     """
-    iter_left: iter = iter(left_post_list.items())  # iter over doc_ids
-    iter_right: iter = iter(right_post_list.items())
-    doc_id1, tf1 = next(iter_left)
-    doc_id2, tf2 = next(iter_right)
+    result_dict: dict = dict()
+    try:
+        iter_left: iter = iter(left_post_list.items())
+        doc_id1, tf1 = next(iter_left)
+    except StopIteration:
+        return result_dict
+
+    try:
+        iter_right: iter = iter(right_post_list.items())
+        doc_id2, tf2 = next(iter_right)
+    except StopIteration:
+        return result_dict
 
     result_dict: dict = dict()
     while True:
