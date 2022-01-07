@@ -1,5 +1,5 @@
 certifi==2020.4.5.1
-cvxopt==1.2.0
+cvxopt==1.2.7
 mkl-service==2.3.0
 ndjson==0.3.1
 nltk==3.4.5
