@@ -1,4 +1,4 @@
-certifi==2020.4.5.1
+certifi==2022.12.7
 cvxopt==1.2.0
 mkl-service==2.3.0
 ndjson==0.3.1
